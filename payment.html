@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Razorpay Checkout</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 720px;
+        margin: 40px auto;
+        padding: 0 20px;
+      }
+
+      h1 {
+        margin-bottom: 16px;
+      }
+
+      label,
+      button,
+      pre {
+        display: block;
+        width: 100%;
+      }
+
+      button {
+        margin-top: 12px;
+        padding: 12px;
+        border: none;
+        background: #4a90e2;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        margin-top: 12px;
+        padding: 12px;
+        font-family: monospace;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Razorpay Checkout Demo</h1>
+    <p>
+      Use this page to create an order and complete payment with Razorpay. Order
+      confirmation will be handled by the webhook, not by client-side
+      verification.
+
+      <label>
+        Bearer token for protected API calls:
+        <input
+          id="token"
+          value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTNjMTdhOGZjNWI2ZDRkYWRhYTFlZTQiLCJyb2xlIjoidXNlciIsImlhdCI6MTc4MjMyMzIwNCwiZXhwIjoxNzg0OTE1MjA0fQ.bDDnXSW8HAyJ3OflSyyZGS658qHyw6Ap1DxYZ075X1A"
+          type="text"
+          style="width: 100%"
+        />
+      </label>
+
+      <button id="payButton">Create Order & Pay</button>
+      <label style="margin-top: 16px">
+        Use existing Razorpay Order ID:
+        <input
+          id="existingOrderId"
+          type="text"
+          placeholder="order_T5ZDNkEPqZv74g"
+          style="width: 100%; margin-top: 8px"
+        />
+      </label>
+      <label>
+        Amount (INR):
+        <input
+          id="existingOrderAmount"
+          type="text"
+          placeholder="2099.97"
+          style="width: 100%; margin-top: 8px"
+        />
+      </label>
+      <button id="payExistingButton">Pay Existing Order</button>
+    </p>
+
+    <h2>Response</h2>
+    <textarea id="output" readonly></textarea>
+
+    <script>
+      const payButton = document.getElementById("payButton");
+      const payExistingButton = document.getElementById("payExistingButton");
+      const output = document.getElementById("output");
+      const tokenInput = document.getElementById("token");
+      const existingOrderIdInput = document.getElementById("existingOrderId");
+      const existingOrderAmountInput = document.getElementById(
+        "existingOrderAmount",
+      );
+
+      const apiUrl = "http://localhost:5000/api";
+      const razorpayKey = "rzp_test_T5Z6ecmWOUIvaV";
+
+      const log = (message) => {
+        output.value += message + "\n";
+        output.scrollTop = output.scrollHeight;
+      };
+
+      const createOrder = async () => {
+        const token = tokenInput.value.trim();
+        if (!token) {
+          alert("Please add a bearer token.");
+          return null;
+        }
+
+        const body = {
+          items: [
+            { product: "6a3930ddf996093c99bc78df", quantity: 2 },
+            { product: "6a3930e3f996093c99bc78e0", quantity: 1 },
+          ],
+          address: {
+            label: "Home",
+            fullName: "John Doe",
+            phone: "9876543210",
+            line1: "123 Main Street",
+            line2: "Apt 4B",
+            city: "Bengaluru",
+            state: "Karnataka",
+            postalCode: "560001",
+            country: "India",
+          },
+          tax: 0,
+          shipping: 0,
+          notes: "Please deliver between 10am and 6pm",
+        };
+
+        const response = await fetch(`${apiUrl}/orders`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Order creation failed: ${error}`);
+        }
+
+        return response.json();
+      };
+
+      const payExistingOrder = async () => {
+        const existingOrderId = existingOrderIdInput.value.trim();
+        const existingOrderAmount = Number(
+          existingOrderAmountInput.value.trim(),
+        );
+        const token = tokenInput.value.trim();
+
+        if (!existingOrderId || !existingOrderAmount || !token) {
+          alert("Please provide order ID, amount, and bearer token.");
+          return null;
+        }
+
+        return {
+          order: null,
+          razorpayOrder: {
+            id: existingOrderId,
+            amount: Math.round(existingOrderAmount * 100),
+            currency: "INR",
+          },
+        };
+      };
+
+      // No client-side payment verification; webhook will update the backend.
+      const verifyPayment = async ({ order_id, payment_id, signature }) => {
+        log("Skipping client-side verify-payment. Waiting for webhook update.");
+        return { ok: true, message: "Webhook will handle verification." };
+      };
+
+      const openCheckout = async (razorpayOrder) => {
+        log("Opening Razorpay checkout...");
+
+        const options = {
+          key: razorpayKey,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          name: "Ritika E-commerce",
+          description: "Order Payment",
+          order_id: razorpayOrder.id,
+          handler: async function (response) {
+            log(
+              "Payment successful. Webhook will verify and update order status.",
+            );
+            log(`razorpay_order_id: ${response.razorpay_order_id}`);
+            log(`razorpay_payment_id: ${response.razorpay_payment_id}`);
+            log(`razorpay_signature: ${response.razorpay_signature}`);
+            log("Do not call verify-payment here.");
+          },
+          theme: {
+            color: "#4a90e2",
+          },
+          prefill: {
+            name: "John Doe",
+            email: "user@email.com",
+            contact: "9876543210",
+          },
+          modal: {
+            ondismiss: function () {
+              log("Checkout closed without completing payment.");
+            },
+          },
+        };
+
+        const razorpay = new Razorpay(options);
+        razorpay.open();
+      };
+
+      payButton.addEventListener("click", async () => {
+        payButton.disabled = true;
+        output.value = "";
+        try {
+          log("Creating order on backend...");
+          const result = await createOrder();
+          log("Backend order created:");
+          log(JSON.stringify(result.order, null, 2));
+          log("\nRazorpay order returned:");
+          log(JSON.stringify(result.razorpayOrder, null, 2));
+
+          await openCheckout(result.razorpayOrder);
+        } catch (error) {
+          log(`Error: ${error.message}`);
+        } finally {
+          payButton.disabled = false;
+        }
+      });
+
+      payExistingButton.addEventListener("click", async () => {
+        payExistingButton.disabled = true;
+        output.value = "";
+        try {
+          log("Using existing Razorpay order...");
+          const result = await payExistingOrder();
+          if (!result) return;
+          log("Existing Razorpay order ID:");
+          log(result.razorpayOrder.id);
+          await openCheckout(result.razorpayOrder);
+        } catch (error) {
+          log(`Error: ${error.message}`);
+        } finally {
+          payExistingButton.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
