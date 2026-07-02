@@ -118,19 +118,17 @@
         }
 
         const body = {
-          items: [
-            { product: "6a3930ddf996093c99bc78df", quantity: 2 },
-            { product: "6a3930e3f996093c99bc78e0", quantity: 1 },
-          ],
+          paymentMethod: "online",
+          items: [{ product: "6a3930e3f996093c99bc78e0", quantity: 2 }],
           address: {
             label: "Home",
-            fullName: "John Doe",
+            fullName: "Ritika Sharma",
             phone: "9876543210",
             line1: "123 Main Street",
             line2: "Apt 4B",
-            city: "Bengaluru",
-            state: "Karnataka",
-            postalCode: "560001",
+            city: "Mumbai",
+            state: "Maharashtra",
+            postalCode: "400001",
             country: "India",
           },
           tax: 0,
@@ -150,6 +148,25 @@
         if (!response.ok) {
           const error = await response.text();
           throw new Error(`Order creation failed: ${error}`);
+        }
+
+        return response.json();
+      };
+
+      const verifyPayment = async ({ order_id, payment_id, signature }) => {
+        const token = tokenInput.value.trim();
+        const response = await fetch(`${apiUrl}/orders/verify-payment`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ order_id, payment_id, signature }),
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Payment verification failed: ${error}`);
         }
 
         return response.json();
@@ -177,12 +194,6 @@
         };
       };
 
-      // No client-side payment verification; webhook will update the backend.
-      const verifyPayment = async ({ order_id, payment_id, signature }) => {
-        log("Skipping client-side verify-payment. Waiting for webhook update.");
-        return { ok: true, message: "Webhook will handle verification." };
-      };
-
       const openCheckout = async (razorpayOrder) => {
         log("Opening Razorpay checkout...");
 
@@ -194,20 +205,29 @@
           description: "Order Payment",
           order_id: razorpayOrder.id,
           handler: async function (response) {
-            log(
-              "Payment successful. Webhook will verify and update order status.",
-            );
+            log("Payment completed in Razorpay checkout.");
             log(`razorpay_order_id: ${response.razorpay_order_id}`);
             log(`razorpay_payment_id: ${response.razorpay_payment_id}`);
             log(`razorpay_signature: ${response.razorpay_signature}`);
-            log("Do not call verify-payment here.");
+
+            try {
+              const verifyResult = await verifyPayment({
+                order_id: response.razorpay_order_id,
+                payment_id: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              });
+              log("Payment verified by backend:");
+              log(JSON.stringify(verifyResult, null, 2));
+            } catch (verificationError) {
+              log(`Verify-payment error: ${verificationError.message}`);
+            }
           },
           theme: {
             color: "#4a90e2",
           },
           prefill: {
-            name: "John Doe",
-            email: "user@email.com",
+            name: "Ritika Sharma",
+            email: "user@example.com",
             contact: "9876543210",
           },
           modal: {

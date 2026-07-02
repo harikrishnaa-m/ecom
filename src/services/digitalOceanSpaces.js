@@ -27,6 +27,25 @@ const getPublicUrl = (key) => {
   return `https://${bucket}.${normalized}/${key}`;
 };
 
+exports.uploadCmsImage = async (file) => {
+  if (!file) return null;
+
+  const extension = path.extname(file.originalname) || ".jpg";
+  const key = `cms/${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
+
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    Body: file.buffer,
+    ACL: "public-read",
+    ContentType: file.mimetype,
+  });
+
+  await s3.send(command);
+
+  return getPublicUrl(key);
+};
+
 exports.uploadCategoryImage = async (file) => {
   if (!file) return null;
 

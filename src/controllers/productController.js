@@ -1,7 +1,7 @@
 const Product = require("../models/Product");
 const { uploadCategoryImage } = require("../services/digitalOceanSpaces");
 
-const buildProductPayload = async (body, file) => {
+const buildProductPayload = async (body, files) => {
   const payload = {
     name: body.name,
     slug: body.slug,
@@ -27,8 +27,15 @@ const buildProductPayload = async (body, file) => {
     metadata: body.metadata ? JSON.parse(body.metadata) : {},
   };
 
-  if (file) {
-    payload.image = await uploadCategoryImage(file);
+  if (files?.image?.length) {
+    payload.image = await uploadCategoryImage(files.image[0]);
+  }
+
+  if (files?.images?.length) {
+    const extraImages = await Promise.all(
+      files.images.map((imageFile) => uploadCategoryImage(imageFile)),
+    );
+    payload.images = payload.images.concat(extraImages);
   }
 
   Object.keys(payload).forEach((key) => {
@@ -115,7 +122,7 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
-    const payload = await buildProductPayload(req.body, req.file);
+    const payload = await buildProductPayload(req.body, req.files);
 
     if (
       !payload.name ||
@@ -143,7 +150,7 @@ exports.createProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   try {
-    const payload = await buildProductPayload(req.body, req.file);
+    const payload = await buildProductPayload(req.body, req.files);
 
     const product = await Product.findByIdAndUpdate(req.params.id, payload, {
       returnDocument: "after",
