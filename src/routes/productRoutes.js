@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   listProducts,
   getProductById,
+  getProductsByCategory,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -19,6 +20,7 @@ const uploadProductImages = uploadCategoryImage.fields([
 ]);
 
 router.get("/", listProducts);
+router.get("/category/:categoryId", getProductsByCategory);
 router.get("/low-stock", protect, admin, getLowStockProducts);
 router.get("/:id", getProductById);
 router.post("/", protect, admin, uploadProductImages, createProduct);
