@@ -18,6 +18,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    googleId: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    resetOtp: {
+      type: String,
+      trim: true,
+    },
+    resetOtpExpires: {
+      type: Date,
+    },
     role: {
       type: String,
       enum: ["user", "admin"],
