@@ -49,12 +49,45 @@ const addressSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const refundSchema = new mongoose.Schema(
+  {
+    refundId: { type: String, trim: true },
+    amount: { type: Number, min: 0, required: true },
+    currency: { type: String, trim: true, default: "INR" },
+    status: {
+      type: String,
+      enum: ["pending", "processed", "failed"],
+      default: "pending",
+    },
+    reason: { type: String, trim: true },
+    notes: { type: String, trim: true },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false },
+);
+
+const cancellationSchema = new mongoose.Schema(
+  {
+    reason: { type: String, trim: true },
+    by: { type: String, enum: ["user", "admin"], default: "user" },
+    note: { type: String, trim: true },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false },
+);
+
 const paymentSchema = new mongoose.Schema(
   {
     method: { type: String, trim: true, required: true },
     status: {
       type: String,
-      enum: ["pending", "paid", "failed"],
+      enum: ["pending", "paid", "failed", "refunded", "cancelled"],
       default: "pending",
     },
     transactionId: { type: String, trim: true },
@@ -115,9 +148,20 @@ const orderSchema = new mongoose.Schema(
       enum: ["pending", "paid", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
+    deliveredAt: {
+      type: Date,
+    },
     notes: {
       type: String,
       trim: true,
+    },
+    refunds: {
+      type: [refundSchema],
+      default: [],
+    },
+    cancellations: {
+      type: [cancellationSchema],
+      default: [],
     },
   },
   {
