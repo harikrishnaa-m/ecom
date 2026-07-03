@@ -147,6 +147,39 @@ exports.listProducts = async (req, res) => {
   }
 };
 
+exports.getProductsByCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = 12;
+
+    const filter = {
+      isActive: true,
+      category: categoryId,
+    };
+
+    const total = await Product.countDocuments(filter);
+    const products = await Product.find(filter)
+      .populate("category", "name slug")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.json({
+      products,
+      pagination: {
+        page,
+        perPage: limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Unable to fetch products by category." });
+  }
+};
+
 exports.getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate(
