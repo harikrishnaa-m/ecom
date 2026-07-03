@@ -36,6 +36,46 @@ const productSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    collectionName: {
+      type: String,
+      trim: true,
+    },
+    availability: {
+      type: String,
+      trim: true,
+    },
+    startingPrice: {
+      type: Number,
+      min: 0,
+    },
+    productInformation: {
+      metal: { type: String, trim: true },
+      diamond: { type: String, trim: true },
+      shape: { type: String, trim: true },
+      certification: { type: String, trim: true },
+      additional: { type: mongoose.Schema.Types.Mixed, default: {} },
+    },
+    technicalDetails: {
+      height: { type: String, trim: true },
+      width: { type: String, trim: true },
+      bandThickness: { type: String, trim: true },
+      centerStone: { type: String, trim: true },
+      diamondWeight: { type: String, trim: true },
+      metalWeight: { type: String, trim: true },
+      goldPurity: { type: String, trim: true },
+      finish: { type: String, trim: true },
+    },
+    schematicImage: {
+      type: String,
+      trim: true,
+    },
+    additionalInformation: {
+      category: { type: String, trim: true },
+      occasion: { type: String, trim: true },
+      collection: { type: String, trim: true },
+      manufacturing: { type: String, trim: true },
+      extra: { type: mongoose.Schema.Types.Mixed, default: {} },
+    },
     stock: {
       type: Number,
       default: 0,

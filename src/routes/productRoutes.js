@@ -15,6 +15,7 @@ const { uploadCategoryImage } = require("../middleware/uploadMiddleware");
 const uploadProductImages = uploadCategoryImage.fields([
   { name: "image", maxCount: 1 },
   { name: "images", maxCount: 10 },
+  { name: "schematicImage", maxCount: 1 },
 ]);
 
 router.get("/", listProducts);

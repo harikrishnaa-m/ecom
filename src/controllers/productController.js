@@ -21,10 +21,51 @@ const buildProductPayload = async (body, files) => {
         : [body.images]
       : [],
     tags: body.tags ? (Array.isArray(body.tags) ? body.tags : [body.tags]) : [],
-    attributes: body.attributes ? JSON.parse(body.attributes) : {},
+    attributes: body.attributes
+      ? typeof body.attributes === "string"
+        ? JSON.parse(body.attributes)
+        : body.attributes
+      : {},
+    collectionName: body.collectionName,
+    availability: body.availability,
+    startingPrice: body.startingPrice ? Number(body.startingPrice) : undefined,
+    productInformation: body.productInformation
+      ? typeof body.productInformation === "string"
+        ? JSON.parse(body.productInformation)
+        : body.productInformation
+      : undefined,
+    technicalDetails: body.technicalDetails
+      ? typeof body.technicalDetails === "string"
+        ? JSON.parse(body.technicalDetails)
+        : body.technicalDetails
+      : {
+          height: body.height,
+          width: body.width,
+          bandThickness: body.bandThickness,
+          centerStone: body.centerStone,
+          diamondWeight: body.diamondWeight,
+          metalWeight: body.metalWeight,
+          goldPurity: body.goldPurity,
+          finish: body.finish,
+        },
+    schematicImage: body.schematicImage,
+    additionalInformation: body.additionalInformation
+      ? typeof body.additionalInformation === "string"
+        ? JSON.parse(body.additionalInformation)
+        : body.additionalInformation
+      : {
+          category: body.additionalCategory,
+          occasion: body.additionalOccasion,
+          collection: body.additionalCollection,
+          manufacturing: body.additionalManufacturing,
+        },
     isFeatured: body.isFeatured === "true" || body.isFeatured === true,
     isActive: body.isActive === "false" ? false : body.isActive !== "false",
-    metadata: body.metadata ? JSON.parse(body.metadata) : {},
+    metadata: body.metadata
+      ? typeof body.metadata === "string"
+        ? JSON.parse(body.metadata)
+        : body.metadata
+      : {},
   };
 
   if (files?.image?.length) {
@@ -36,6 +77,10 @@ const buildProductPayload = async (body, files) => {
       files.images.map((imageFile) => uploadCategoryImage(imageFile)),
     );
     payload.images = payload.images.concat(extraImages);
+  }
+
+  if (files?.schematicImage?.length) {
+    payload.schematicImage = await uploadCategoryImage(files.schematicImage[0]);
   }
 
   Object.keys(payload).forEach((key) => {
