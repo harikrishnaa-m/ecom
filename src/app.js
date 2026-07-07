@@ -27,5 +27,6 @@ app.use("/api/addresses", require("./routes/addressRoutes"));
 app.use("/api/returns", require("./routes/returnRoutes"));
 app.use("/api/cms", require("./routes/cmsRoutes"));
 app.use("/api/custom-orders", require("./routes/customOrderRoutes"));
+app.use("/api/contact-us", require("./routes/contactUsRoutes"));
 
 module.exports = app;
