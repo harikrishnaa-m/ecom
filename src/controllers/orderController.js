@@ -49,7 +49,14 @@ const reserveStock = async (items, session) => {
     );
 
     if (!product) {
-      throw new Error(`Insufficient stock for product ${item.product}`);
+      const existingProduct = await Product.findById(item.product).select(
+        "name",
+      );
+      throw new Error(
+        `Insufficient stock for product ${
+          existingProduct?.name || item.product
+        }`,
+      );
     }
 
     reserved.push({ product: product._id, quantity: item.quantity });
